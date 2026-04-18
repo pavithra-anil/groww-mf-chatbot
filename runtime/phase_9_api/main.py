@@ -9,7 +9,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-from runtime.phase_5_retrieval.retriever import retrieve
 from runtime.phase_6_generation.generator import generate
 from runtime.phase_7_safety.safety import check_safety
 from runtime.phase_8_threads.session_manager import (
@@ -81,6 +80,8 @@ def chat(request: ChatRequest):
         }
 
     # Step 2: Retrieve relevant chunks
+    # Import here so retrieval stack is initialized only on first chat request.
+    from runtime.phase_5_retrieval.retriever import retrieve
     chunks = retrieve(query, k=3)
 
     # Step 3: Generate answer

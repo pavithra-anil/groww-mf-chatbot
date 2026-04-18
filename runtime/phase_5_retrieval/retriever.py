@@ -1,26 +1,41 @@
 import chromadb
-from sentence_transformers import SentenceTransformer
+from chromadb.api.models.Collection import Collection
+from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
 MODEL_NAME = "BAAI/bge-small-en-v1.5"
+CHROMA_PATH = "data/chroma"
+COLLECTION_NAME = "mf_faq"
 
-# Load model and ChromaDB once when module is imported
-print("Loading retriever...")
-model = SentenceTransformer(MODEL_NAME)
-client = chromadb.PersistentClient(path="data/chroma")
-collection = client.get_collection("mf_faq")
-print("✓ Retriever ready!\n")
+# Lazy-initialized globals to keep API startup lightweight.
+_collection: Collection | None = None
+_embedding_fn: SentenceTransformerEmbeddingFunction | None = None
+
+
+def _get_collection() -> Collection:
+    global _collection, _embedding_fn
+
+    if _collection is None:
+        print("Loading retriever...")
+        _embedding_fn = SentenceTransformerEmbeddingFunction(model_name=MODEL_NAME)
+        client = chromadb.PersistentClient(path=CHROMA_PATH)
+        _collection = client.get_collection(
+            COLLECTION_NAME,
+            embedding_function=_embedding_fn,
+        )
+        print("Retriever ready!\n")
+
+    return _collection
 
 def retrieve(query: str, k: int = 3):
     """
     Search ChromaDB for the most relevant chunks to the query.
     Returns top k results with text and source URL.
     """
-    # Convert query to vector
-    query_embedding = model.encode(query).tolist()
+    collection = _get_collection()
 
-    # Search ChromaDB
+    # Query by text; Chroma uses embedding_function lazily.
     results = collection.query(
-        query_embeddings=[query_embedding],
+        query_texts=[query],
         n_results=k,
         include=["documents", "metadatas", "distances"]
     )
