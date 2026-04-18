@@ -2,7 +2,7 @@ import chromadb
 from chromadb.api.models.Collection import Collection
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
-MODEL_NAME = "BAAI/bge-small-en-v1.5"
+MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 CHROMA_PATH = "data/chroma"
 COLLECTION_NAME = "mf_faq"
 

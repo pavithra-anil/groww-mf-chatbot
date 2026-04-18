@@ -39,7 +39,7 @@ tools. No investment advice. Every answer cites one official source.
                     |
                     v
          [ Phase 4.2: Embedder ]
-         Load BAAI/bge-small-en-v1.5 locally
+         Load sentence-transformers/all-MiniLM-L6-v2 locally
          Convert chunks to vectors
          Save → data/normalized/
                     |
