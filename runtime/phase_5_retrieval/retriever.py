@@ -1,27 +1,25 @@
 import chromadb
 from chromadb.api.models.Collection import Collection
-from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
+from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2
 
-MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+# ONNX MiniLM matches all-MiniLM-L6-v2 (384-d) without loading PyTorch — critical for low-RAM hosts (e.g. Render free).
 CHROMA_PATH = "data/chroma"
 COLLECTION_NAME = "mf_faq"
 
 # Lazy-initialized globals to keep API startup lightweight.
 _collection: Collection | None = None
-_embedding_fn: SentenceTransformerEmbeddingFunction | None = None
+_query_embedder: ONNXMiniLM_L6_V2 | None = None
 
 
 def _get_collection() -> Collection:
-    global _collection, _embedding_fn
+    global _collection, _query_embedder
 
     if _collection is None:
         print("Loading retriever...")
-        _embedding_fn = SentenceTransformerEmbeddingFunction(model_name=MODEL_NAME)
+        _query_embedder = ONNXMiniLM_L6_V2()
         client = chromadb.PersistentClient(path=CHROMA_PATH)
-        _collection = client.get_collection(
-            COLLECTION_NAME,
-            embedding_function=_embedding_fn,
-        )
+        # Collection was built with pre-computed embeddings (ingest); do not attach a new embedding_function here.
+        _collection = client.get_collection(COLLECTION_NAME)
         print("Retriever ready!\n")
 
     return _collection
@@ -32,12 +30,13 @@ def retrieve(query: str, k: int = 3):
     Returns top k results with text and source URL.
     """
     collection = _get_collection()
+    assert _query_embedder is not None
+    query_embedding = _query_embedder([query])[0].tolist()
 
-    # Query by text; Chroma uses embedding_function lazily.
     results = collection.query(
-        query_texts=[query],
+        query_embeddings=[query_embedding],
         n_results=k,
-        include=["documents", "metadatas", "distances"]
+        include=["documents", "metadatas", "distances"],
     )
 
     # Format results
