@@ -11,7 +11,7 @@ venv/
 # Data (too large for GitHub)
 data/raw/
 data/normalized/
-data/chroma/
+
 
 # Node
 frontend/node_modules/
@@ -20,3 +20,6 @@ frontend/.next/
 # OS
 .DS_Store
 Thumbs.db
+
+*.onetoc2
+python
