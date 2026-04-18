@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { createSession, sendMessage } from "@/lib/api";
+import { createSession, prepareSession, sendMessage } from "@/lib/api";
 
 interface Message {
   role: "user" | "assistant";
@@ -129,38 +129,44 @@ export default function Home() {
 
   async function openChatWithQuestion(question: string) {
     setChatOpen(true);
-    let sid = activeSessionId;
-    if (!sid) {
-      try {
-        const id = await createSession();
-        const session: Session = { id, title: question.slice(0, 35), messages: [] };
-        setSessions((prev) => [session, ...prev]);
-        setActiveSessionId(id);
-        sid = id;
-      } catch { return; }
-    }
-    await sendQuery(question, sid);
+    await sendQuery(question, activeSessionId);
   }
 
-  async function sendQuery(query: string, sid: string) {
-    if (!query || !sid || loading) return;
-    setSessions((prev) =>
-      prev.map((s) =>
-        s.id === sid
+  async function sendQuery(query: string, sid: string | null) {
+    if (!query || loading) return;
+
+    let session_id: string;
+    try {
+      session_id = await prepareSession(sid);
+    } catch {
+      alert("Could not connect to backend. Make sure the API is running.");
+      return;
+    }
+
+    if (!sid) setActiveSessionId(session_id);
+
+    setSessions((prev) => {
+      let list = prev;
+      if (!list.some((s) => s.id === session_id)) {
+        list = [{ id: session_id, title: query.slice(0, 35), messages: [] }, ...prev];
+      }
+      return list.map((s) =>
+        s.id === session_id
           ? {
               ...s,
               title: s.messages.length === 0 ? query.slice(0, 35) : s.title,
               messages: [...s.messages, { role: "user" as const, content: query }],
             }
           : s
-      )
-    );
+      );
+    });
+
     setLoading(true);
     try {
-      const data = await sendMessage(sid, query);
+      const data = await sendMessage(session_id, query);
       setSessions((prev) =>
         prev.map((s) =>
-          s.id === sid
+          s.id === session_id
             ? { ...s, messages: [...s.messages, { role: "assistant" as const, content: data.answer, source: data.source }] }
             : s
         )
@@ -168,7 +174,7 @@ export default function Home() {
     } catch {
       setSessions((prev) =>
         prev.map((s) =>
-          s.id === sid
+          s.id === session_id
             ? { ...s, messages: [...s.messages, { role: "assistant" as const, content: "Could not get a response. Make sure the backend is running." }] }
             : s
         )
@@ -181,10 +187,6 @@ export default function Home() {
     const query = text || input.trim();
     if (!query || loading) return;
     setInput("");
-    if (!activeSessionId) {
-      await openChatWithQuestion(query);
-      return;
-    }
     await sendQuery(query, activeSessionId);
   }
 
@@ -401,7 +403,11 @@ export default function Home() {
             </div>
           )}
           <button
-            onClick={() => { setChatOpen(true); setShowGreeting(false); if (!activeSessionId) handleNewChat(); }}
+            onClick={async () => {
+              setChatOpen(true);
+              setShowGreeting(false);
+              if (!activeSessionId) await handleNewChat();
+            }}
             onMouseEnter={() => setShowGreeting(true)}
             onMouseLeave={() => setShowGreeting(false)}
             style={{
