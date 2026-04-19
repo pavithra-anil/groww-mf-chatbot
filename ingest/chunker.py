@@ -20,8 +20,8 @@ FILE_NAMES = [
     "hdfc_large_cap",
 ]
 
-CHUNK_SIZE = 500
-CHUNK_OVERLAP = 50
+CHUNK_SIZE = 1500
+CHUNK_OVERLAP = 200
 
 def extract_text(html_content):
     """Extract only visible readable text from HTML"""
