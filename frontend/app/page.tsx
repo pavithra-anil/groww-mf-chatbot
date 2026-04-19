@@ -92,10 +92,18 @@ export default function Home() {
   const [showSessions, setShowSessions] = useState(false);
   const [showGreeting, setShowGreeting] = useState(true);
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const activeSession = sessions.find((s) => s.id === activeSessionId);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowGreeting(false), 4000);
@@ -399,7 +407,7 @@ export default function Home() {
 
       {/* FLOATING BUBBLE */}
       {!chatOpen && (
-        <div style={{ position: "fixed", bottom: 28, right: 28, zIndex: 1000 }}>
+        <div style={{ position: "fixed", bottom: 16, right: 16, zIndex: 1000 }}>
           {showGreeting && (
             <div style={{
               position: "absolute", bottom: 68, right: 0,
@@ -439,8 +447,10 @@ export default function Home() {
       {chatOpen && (
         <div style={{
           position: "fixed", bottom: 0, right: 0, zIndex: 1000,
-          width: 380, height: "85vh", maxHeight: 640,
-          background: "#fff", borderRadius: "16px 16px 0 0",
+          width: isMobile ? "100%" : 380,
+          height: isMobile ? "100%" : "85vh",
+          maxHeight: isMobile ? "100%" : 640,
+          background: "#fff", borderRadius: isMobile ? 0 : "16px 16px 0 0",
           boxShadow: "0 -4px 40px rgba(0,0,0,0.15)",
           display: "flex", flexDirection: "column",
           border: "1px solid #f0f0f0",
@@ -450,7 +460,7 @@ export default function Home() {
           <div style={{
             padding: "14px 16px", borderBottom: "1px solid #f0f0f0",
             display: "flex", alignItems: "center", gap: 10,
-            borderRadius: "16px 16px 0 0",
+            borderRadius: isMobile ? 0 : "16px 16px 0 0",
           }}>
             <GrowwLogo size={34} />
             <div style={{ flex: 1 }}>
