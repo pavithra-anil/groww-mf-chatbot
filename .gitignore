@@ -11,6 +11,8 @@ venv/
 # Data (too large for GitHub)
 data/raw/
 data/normalized/
+# Local Chroma vector DB (regenerated on ingest; changes frequently)
+data/chroma/chroma.sqlite3
 
 
 # Node
