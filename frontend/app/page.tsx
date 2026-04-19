@@ -132,7 +132,11 @@ export default function Home() {
     await sendQuery(question, activeSessionId);
   }
 
-  async function sendQuery(query: string, sid: string | null) {
+  async function sendQuery(
+    query: string,
+    sid: string | null,
+    opts?: { afterSessionReady?: () => void }
+  ) {
     if (!query || loading) return;
 
     let session_id: string;
@@ -142,6 +146,8 @@ export default function Home() {
       alert("Could not connect to backend. Make sure the API is running.");
       return;
     }
+
+    opts?.afterSessionReady?.();
 
     if (!sid) setActiveSessionId(session_id);
 
@@ -179,19 +185,25 @@ export default function Home() {
             : s
         )
       );
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   async function handleSend(text?: string) {
     const query = text || input.trim();
     if (!query || loading) return;
-    setInput("");
-    await sendQuery(query, activeSessionId);
+    await sendQuery(query, activeSessionId, {
+      afterSessionReady: () => setInput(""),
+    });
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
+    if (e.nativeEvent.isComposing) return;
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      void handleSend();
+    }
   }
 
   return (
